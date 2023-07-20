@@ -91,7 +91,7 @@ public class LinksController : ControllerBase
 	}
 
 	[HttpPut("active/{id}")]
-	[AllowAnonymous]
+	[AllowAnonymous] // Fix
 	public async Task<IActionResult> ToggleActive(int id)
 	{
 		var linkItem = _context.Links.Where(l => l.LinkId == id).FirstOrDefault();

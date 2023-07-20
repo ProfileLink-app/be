@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using ProfileLink.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ProfileLinkTest.Controllers;
@@ -29,7 +30,7 @@ public class AuthenticationController : ControllerBase
 	{
 		if (_userData != null && _userData.Username != null && _userData.Password != null)
 		{
-			var user = await AuthenticateUser(_userData.Username, _userData.Password);
+			var user = await AuthenticateUser(_userData.Username, HashPasword(_userData.Password));
 
 			if (user != null)
 			{
@@ -46,22 +47,23 @@ public class AuthenticationController : ControllerBase
 		}
 	}
 
-	public record usernameData(string current, string updated);
+	public record usernameData(string username);
 	[HttpPost("username")]
 	[AllowAnonymous]
 	public async Task<IActionResult> CheckUsernameValid([FromBody] usernameData data)
 	{
-		if (data.current != null && data.updated != null)
+		if (data.username != null)
 		{
-			Console.Write($"Current: {data.current}, new: {data.updated}");
-			var user = await GetUser(data.updated);
+			var user = await GetUser(data.username);
 
-			if (user == null || data.current == data.updated)
+			if (user == null)
 			{
-				return Ok();
+				Console.WriteLine(1);
+				return Ok("Username available");
 			}
 			else
 			{
+				Console.WriteLine(2);
 				return BadRequest("Username taken");
 			}
 		}
@@ -88,6 +90,15 @@ public class AuthenticationController : ControllerBase
 			.FirstOrDefaultAsync();
 
 		return user!;
+	}
+
+	private static string HashPasword(string password)
+	{
+		SHA256 hash = SHA256.Create();
+		var passwordBytes = Encoding.Default.GetBytes(password);
+		var hashedPassword = hash.ComputeHash(passwordBytes);
+
+		return Convert.ToBase64String(hashedPassword);
 	}
 
 	private string GenerateToken(User user)

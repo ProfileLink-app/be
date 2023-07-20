@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using ProfileLinkTest.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using ProfileLink.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ProfileLinkTest.Controllers;
 
@@ -62,12 +64,14 @@ public class UsersController : ControllerBase
 	[AllowAnonymous]
 	public async Task<ActionResult<UserDTO>> Post([FromBody] RegistrationData _userData)
 	{
+		
 		if (_userData != null &&
 			_userData.Username != null &&
 			_userData.Password != null &&
 			_userData.FirstName != null &&
 			_userData.LastName != null)
 		{
+			var hashedPassword = HashPasword(_userData.Password);
 			var user = await GetUser(_userData.Username);
 
 			if (user == null)
@@ -75,10 +79,10 @@ public class UsersController : ControllerBase
 				var newUser = new User
 				{
 					Username = _userData.Username!,
-					Password = _userData.Password!,
+					Password = hashedPassword,
 					FirstName = _userData.FirstName!,
 					LastName = _userData.LastName!,
-					Bio = "fgd"!,
+					Bio = ""!,
 					Theme = "840AD7"
 				};
 
@@ -170,5 +174,14 @@ public class UsersController : ControllerBase
 			.FirstOrDefaultAsync();
 
 		return user!;
+	}
+
+	private static string HashPasword(string password)
+	{
+		SHA256 hash = SHA256.Create();
+		var passwordBytes = Encoding.Default.GetBytes(password);
+		var hashedPassword = hash.ComputeHash(passwordBytes);
+
+		return Convert.ToBase64String(hashedPassword);
 	}
 }
